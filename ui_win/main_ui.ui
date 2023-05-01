@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>671</width>
-    <height>646</height>
+    <width>667</width>
+    <height>638</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,7 +44,7 @@
      <rect>
       <x>10</x>
       <y>510</y>
-      <width>641</width>
+      <width>351</width>
       <height>71</height>
      </rect>
     </property>
@@ -57,13 +57,60 @@
      <string>Result</string>
     </property>
    </widget>
+   <widget class="QSlider" name="conf_slider">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>550</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLCDNumber" name="conf_display">
+    <property name="geometry">
+     <rect>
+      <x>560</x>
+      <y>540</y>
+      <width>101</width>
+      <height>41</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>380</x>
+      <y>530</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Confidence Threshold</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>671</width>
+     <width>667</width>
      <height>21</height>
     </rect>
    </property>
@@ -88,5 +135,22 @@
   </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>conf_slider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>conf_display</receiver>
+   <slot>display(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>496</x>
+     <y>579</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>586</x>
+     <y>583</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

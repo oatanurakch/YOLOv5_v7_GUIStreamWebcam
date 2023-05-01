@@ -32,9 +32,12 @@ class myAPP(Ui_MainWindow):
         # Initial signal
         self.actionExit.setShortcut('Ctrl+Q')
         self.actionExit.triggered.connect(self.exit)
-        self.weights = 'yolov5l.pt'
+        # Init confedence threshold slider
+        self.InitSliderConf()
+        # Init confidence threshold
+        self.updateConfidence()
+        self.weights = 'DroneModel.pt'
         self.source = '0'
-        self.conf_thres = 0.80
         self.iou_thres = 0.45
         self.is_continue = True                 # continue/pause
         self.percent_length = 1000              # progress bar
@@ -42,7 +45,28 @@ class myAPP(Ui_MainWindow):
         self.rate = 100
         self.save_fold = './result'
         self.thread_jump_out = False
-    
+        self.found_drone = False
+        MainWindow.setWindowTitle("Drone Detection")
+        # Fixed size mainwindow
+        size = MainWindow.size()
+        width = size.width()
+        height = size.height()
+        MainWindow.setFixedSize(width, height)
+        # Set windows flag
+        MainWindow.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        MainWindow.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, False)
+        
+    # Init confedence threshold slider
+    def InitSliderConf(self):
+        self.conf_slider.setValue(50)
+        self.conf_display.display(self.conf_slider.value())
+        self.conf_slider.sliderReleased.connect(self.updateConfidence)
+
+    # Update confedence threshold
+    def updateConfidence(self):
+        self.conf_thres = self.conf_slider.value() / 100
+        
+    # Detect process
     def run(self,
             imgsz=640,  # inference size (pixels)
             max_det=1000,  # maximum detections per image
@@ -52,7 +76,7 @@ class myAPP(Ui_MainWindow):
             save_conf=False,  # save confidences in --save-txt labels
             save_crop=False,  # save cropped prediction boxes
             nosave=False,  # do not save images/videos
-            classes=None,  # filter by class: --class 0, or --class 0 2 3
+            classes=2,  # filter by class: --class 0, or --class 0 2 3
             agnostic_nms=False,  # class-agnostic NMS
             augment=False,  # augmented inference
             visualize=False,  # visualize features
@@ -104,6 +128,9 @@ class myAPP(Ui_MainWindow):
         # model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
         seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
         for path, im, im0s, vid_cap, s in dataset:
+            # Result for save text
+            result_text_view = 'Result: '
+            self.found_drone = False
             if self.thread_jump_out:
                 break
             with dt[0]:
@@ -144,8 +171,6 @@ class myAPP(Ui_MainWindow):
                 if len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
-
-                    result_text_view = 'Result: '
                     # Print results
                     for c in det[:, 5].unique():
                         n = (det[:, 5] == c).sum()  # detections per class
@@ -161,21 +186,28 @@ class myAPP(Ui_MainWindow):
                                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                         if save_img or save_crop or view_img:  # Add bbox to image
-                            c = int(cls)  # integer class
+                            c = int(cls)  # integer class      
+                            if c == 2:
+                                self.found_drone = True  
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
                 # Stream results
-                self.im0 = annotator.result()
-                self.im0 = cv2.cvtColor(self.im0, cv2.COLOR_BGR2RGB)
-                height, width, channel = self.im0.shape
-                step = channel * width
-                qImg = QImage(self.im0.data, width, height, step, QImage.Format_RGB888)
-                self.stream.setPixmap(QPixmap.fromImage(qImg))
-                # Set Text Result 
-                self.result_text.setText(result_text_view[:len(result_text_view)-2])
+                try:
+                    self.im0 = annotator.result()
+                    self.im0 = cv2.cvtColor(self.im0, cv2.COLOR_BGR2RGB)
+                    height, width, channel = self.im0.shape
+                    step = channel * width
+                    qImg = QImage(self.im0.data, width, height, step, QImage.Format_RGB888)
+                    self.stream.setPixmap(QPixmap.fromImage(qImg))
+                    # Set Text Result 
+                    # self.result_text.setText(result_text_view[:len(result_text_view)-2])
+                    self.result_text.setText('Found Drone !' if self.found_drone else 'Not Found Drone !')
+                except: 
+                    MainWindow.update()
+
     
     def exit(self):
         self.thread_jump_out = True
@@ -187,7 +219,7 @@ class threadDetect(th):
     def __init__(self):
         th.__init__(self)
     def run(self):
-        while not obj.thread_jump_out:
+        if not obj.thread_jump_out:
             obj.run()
 
 if __name__ == '__main__':
